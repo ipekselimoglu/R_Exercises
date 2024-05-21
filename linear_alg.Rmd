@@ -1,0 +1,91 @@
+```{r}
+library(matrixcalc)
+```
+
+```{r}
+library(MLmetrics)
+```
+```{r}
+x<- runif(150)
+x
+y<-round(runif(50,1,10))
+y
+```
+```{r}
+?reshape
+```
+
+
+```{r}
+m_x <-matrix(x,nrow=50,ncol=3)
+m_y <-as.matrix(y)
+
+dim(m_x)
+dim(m_y)
+```
+
+```{r}
+library(pracma)
+```
+
+
+```{r}
+#a.x=y
+#a=y*x^-1
+
+m_x_i <-pinv(m_x)
+dim(m_x_i)
+
+w <-t(m_y) %*% t(m_x_i)
+dim(w)
+
+```
+```{r}
+dim(m_x)
+y_hat <-m_x %*% t(w)
+y_hat
+```
+```{r}
+e <-m_y - y_hat 
+e
+```
+```{r}
+sqrt(mean(e^2))  #rmse
+```
+
+```{r}
+#a.x +c =y
+mxb= cbind(m_x,1)
+mxb
+```
+```{r}
+dim(m_y)
+dim(mxb)
+#y=a.x
+#a= y *x^1
+mxbi <- pinv(mxb)
+dim(mxbi)
+w2 <- t(m_y) %*% t(mxbi)
+```
+
+
+```{r}
+dim(w2)
+dim(mxbi)
+y_hat_2 <-  t(mxbi) %*% t(w2)
+dim(y_hat_2)
+
+```
+```{r}
+e_2 <- m_y - y_hat_2
+
+sqrt(mean(e_2^2))
+```
+
+```{r}
+svd(m_x,m_y)
+```
+
+
+
+

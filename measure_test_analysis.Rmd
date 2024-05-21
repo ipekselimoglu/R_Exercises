@@ -1,0 +1,249 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+
+```{r}
+sum(is.na(measureTestSteps))
+```
+
+
+```{r}
+str(measureTestSteps)
+
+```
+```{r}
+
+glimpse(measureTestSteps)
+
+```
+```{r}
+names(measureTestSteps)
+```
+```{r}
+names(measureTestSteps)<- c("id" ,"Location","Duration","Result")
+
+names(measureTestSteps)
+```
+```{r}
+v1_measureTestSteps<-measureTestSteps %>%
+                      mutate( Duration = Duration*10^-9)%>%
+                      mutate(Result= as.factor(Result))%>%
+                      mutate(Location=str_remove(Location,"Scenarios."))%>%
+                      mutate(id=row_number())
+
+v1_measureTestSteps
+
+glimpse(v1_measureTestSteps)
+```
+```{r}
+sum(duplicated(v1_measureTestSteps))
+
+```
+```{r}
+  v2_measureTestSteps <- v1_measureTestSteps%>%
+                                  mutate(Category =ifelse(str_detect(Location,"(String)"),"String",
+                                                          ifelse(str_detect(Location,"(Scenario)"),"Scenario","Void")))%>%
+                                  mutate(Location=lapply(Location,function(x) str_split(x,"[( ]")[[1]][1])%>%
+                                           unlist())%>%
+                                  mutate(Category=as.factor(Category))%>%
+                                  mutate(Location=as.factor(Location))
+                            
+
+  
+v2_measureTestSteps
+
+```
+```{r}
+temp <- v1_measureTestSteps$Location[1]
+
+#temp
+
+str_split(temp,"[( ]")[[1]][1]
+
+```
+
+```{r}
+#length(unique(v2_measureTestSteps$Location))
+#length(v2_measureTestSteps$Location)-sum(duplicated(v2_measureTestSteps$Location))
+
+sum(!duplicated(v2_measureTestSteps$Location))
+  
+```
+```{r}
+ v2_measureTestSteps %>%
+         ggplot(aes(x=Location,y=Duration,color=Category))+
+         geom_point(size= 3,alpha=0.5)+
+         scale_y_continuous(limits = c(0,100))+
+         theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))+
+         labs(x="LOCATION",y="DURATION(SN)",color="CATEGORY",title ="Location vs Duration")
+```
+```{r}
+  v2_measureTestSteps %>%
+         ggplot(aes(x=Category,y=Duration,color=Result))+
+         geom_point(size= 3,alpha=0.5)+
+         theme(
+          rect = element_rect(fill = "lightyellow"),
+           legend.key = element_rect(color = "blue"),
+           panel.grid.major.y = element_line(color="black",linetype = "dotted"),
+           axis.text = element_text(color="purple"),
+           plot.title = element_text(size = 16,face="bold"))+
+           labs(x="LOCATION",y="DURATION(SN)",color="RESULT",title ="Location vs Duration Dist.")
+            
+  
+```
+
+
+```{r}
+ggplot(v2_measureTestSteps,aes(x=Category,y=Duration,color=Result))+
+  geom_point()+
+  theme_dark()+
+  scale_y_continuous(limits = c(0,35))+
+  theme(
+    rect = element_rect(fill = "lightyellow"),
+    legend.key = element_rect(color = "blue"),
+    panel.grid.major.y = element_line(color="black",linetype = "dotted"),
+    axis.text = element_text(color="purple"),
+    plot.title = element_text(size = 16,face="bold"))+ 
+    labs(x="CATEGORY",y="DURATION(SN)",color="RESULT",title ="Theme Deneme")
+```
+
+```{r}
+ggplot(v2_measureTestSteps,aes(x=Category,y=Duration,color=Result))+
+  geom_point(size=3,alpha=0.7,position = "jitter")+
+  scale_y_log10()+
+  labs(x="Category", y ="Duration(sn)", title="Category/Duration with Jitter")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+ggplot(v2_measureTestSteps,aes(x=Duration))+
+  geom_histogram(binwidth = 1,fill="orange")+
+  scale_y_log10()+
+  facet_wrap(~Category)+
+  labs(x="Duration(sn)", y ="Count", title="Count of All Operations Result Values")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+sum(v2_measureTestSteps$Void)
+ 
+```
+```{r}
+ ps<- v2_measureTestSteps%>%
+      filter(Category=="String",Result=="passed")%>%
+      summarize(mean_of_passed_string= mean(Duration))
+ ps
+```
+```{r}
+pf<-  v2_measureTestSteps %>%
+      filter(Category=="String",Result=="failed")%>%
+      summarize(mean_of_failed_string= mean(Duration))
+pf
+```
+```{r}
+ ps2<- v2_measureTestSteps %>%
+       filter(Category=="String",Result=="skipped")%>%
+       summarize(mean_of_skipped_string= mean(Duration))
+ ps2
+```
+```{r}
+result_of_string <- data.frame(ps,pf,ps2)
+result_of_string
+```
+```{r}
+v2_measureTestSteps%>%
+  filter(Duration <50)%>%
+  
+  ggplot(aes(id,Duration,color=Category))+
+  geom_line()+
+  stat_smooth(span=0.4, color="yellow")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  labs(x="Id",y="Duration(sn.)",title = "ALL CATEGORIES VS ID/DURATION" )
+```
+
+```{r}
+total_mean <-v2_measureTestSteps %>%
+             summarize(mean_total= mean(Duration))
+
+total_mean
+```
+
+```{r}
+ v2_measureTestSteps %>%
+         filter(Duration<40)%>%
+         ggplot(aes(x=Category,y=Duration,color=Result))+
+         geom_point(size= 2)+
+         scale_y_continuous(limits = c(0,40))+
+         geom_hline(aes(yintercept = mean(v2_measureTestSteps$Duration),linetype = "Mean"),colour= 'Purple',size=1)+
+         theme_bw()+theme(plot.title = element_text(hjust = 0.5))+
+         labs(x="Category",y="Duration(sn.)",title = "CATEGORY/ DURATION /RESULT" ) 
+  
+
+```
+
+```{r}
+degisken <- v2_measureTestSteps %>%
+                              filter(Duration<40)%>%
+                              group_by(Location,Result)%>%
+                              summarise(mean = round(mean(Duration)))
+
+degisken
+ggplot(degisken,aes(Location,y =mean ,color= Result))+
+geom_point()+ theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+
+```
+```{r}
+
+ v2_measureTestSteps %>%
+         filter(Duration<40)%>%
+         ggplot()+
+         geom_point(aes(x=Location,y=Duration),size= 2)+
+         scale_y_continuous(limits = c(0,40))+
+         geom_hline(aes(yintercept = mean(v2_measureTestSteps$Duration),linetype = "Mean"),colour= 'Purple',size=1)+
+         geom_line(data=.%>%
+                      filter(Duration<40)%>%
+                      group_by(Location)%>%
+                      summarise(mean = round(mean(Duration))),
+                      mapping= aes(x=Location,y = mean,color="ortalamalar ",group=1))+
+         theme_bw()+theme(plot.title = element_text(hjust = 0.5))+
+         labs(x="Location",y="Duration(sn.)",title = "LOCATION/ DURATION/ RESULT" )+
+         theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+```
+```{r}
+ v2_measureTestSteps %>%
+         filter(Duration<35)%>%
+         ggplot(aes(x=Duration,y=Category,color=Location))+
+         geom_point(size= 2)+
+         scale_x_continuous(limits = c(0,35))+
+         geom_vline(aes(xintercept = mean(v2_measureTestSteps$Duration),linetype = "Mean"),colour= 'Purple',size=1)+
+         theme_bw()+theme(plot.title = element_text(hjust = 0.5))+
+         labs(x="Duration(sn)",y="Category",title = "DURATION/ CATEGORY/ LOCATION" )+
+         theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+```
+
+
+
+
+```{r}
+v2_measureTestSteps %>%
+         filter(Duration<40)%>%
+         group_by(Location)%>%
+         summarise(mean = round(mean(Duration)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

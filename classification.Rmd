@@ -1,0 +1,110 @@
+
+```{r}
+library(tidyverse)
+library(caret)
+library(ggplot2)
+```
+
+
+
+```{r}
+iris_df <- read.csv(file="~/Downloads/iris.ipek")
+```
+
+```{r}
+iris_df
+```
+
+
+
+
+```{r}
+scaled_iris <- iris_df%>%
+               mutate(sepal_length = scale(sepal_length),sepal_width=scale(sepal_width),petal_length=scale(petal_width),                                                                    petal_width=scale(petal_width))%>%
+               mutate(species = as.numeric(species))
+```
+
+
+
+
+```{r}
+scaled_iris
+```
+```{r}
+control <- trainControl(method="cv" , number =10)
+metric  <- "Accuracy"
+```
+
+
+```{r}
+    set.seed(111)
+    fit_knn <-train(species~., data=scaled_iris, method="knn",trControl=control)
+    set.seed(111)
+    fit_svm <-train(species~., data=scaled_iris, method="svmRadial",trControl=control)
+    set.seed(111)
+    fit_rf <-train(species~., data=scaled_iris, method="rf",trControl=control)
+    set.seed(111)
+    fit_dt <- train(species~., data=scaled_iris, method="rpart",trControl=control)
+    set.seed(111)
+    fit_lm <- train(species~., data=scaled_iris, method="lm",trControl=control)
+    
+```
+
+
+```{r}
+str(fit_knn)
+
+```
+
+```{r}
+data.frame(RMSE=c(fit_knn$results$RMSE[1],
+                  fit_dt$results$RMSE[1],
+                  fit_lm$results$RMSE[1],
+                  fit_rf$results$RMSE[1],
+                  fit_svm$results$RMSE[1]),
+                  method=c("knn","dt","lm","rf","svm"))%>%
+ggplot()+
+  geom_bar(stat = "identity", aes(x=method , y= RMSE, fill=method))
+
+```
+
+```{r}
+scaled_iris$pred <- predict(fit_dt, newdata = scaled_iris)
+```
+
+```{r}
+scaled_iris$pred <-round(scaled_iris$pred)
+```
+
+```{r}
+scaled_iris%>%
+  select(species,pred)%>%
+  gather(key = type,value=value,pred,species)%>%
+  mutate(index = 1:n())%>%
+  mutate(index = index%%150)%>%
+  ggplot()+
+  geom_point(aes(x=index,y=value,color=type))
+```
+```{r}
+confusionMatrix(as.factor(scaled_iris$pred),as.factor(scaled_iris$species))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
